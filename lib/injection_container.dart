@@ -2,6 +2,8 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:stylemate/core/network/dio_interceptor.dart';
 
 // Core
 import 'package:stylemate/core/network/network_info.dart';
@@ -17,27 +19,70 @@ import 'package:stylemate/features/auth/presentation/bloc/auth_bloc.dart';
 
 // Wardrobe Feature
 import 'package:stylemate/features/wardrobe/data/datasources/wardrobe_remote_data_source.dart';
-import 'package:stylemate/features/wardrobe/data/repositories/wardrobe_repository_impl.dart';
+import 'package:stylemate/features/wardrobe/domain/repositories/wardrobe_repository_impl.dart';
 import 'package:stylemate/features/wardrobe/domain/repositories/wardrobe_repositorty.dart';
 import 'package:stylemate/features/wardrobe/domain/usecases/get_wardrobe_usecase.dart';
 import 'package:stylemate/features/wardrobe/domain/usecases/add_item_usecase.dart';
 import 'package:stylemate/features/wardrobe/presentation/bloc/wardrobe_bloc.dart';
 
-// Service Locator instance
 final sl = GetIt.instance;
 
 Future<void> init() async {
-  // ===== Features - Auth =====
+  // ================= EXTERNAL =================
+
+  final sharedPreferences = await SharedPreferences.getInstance();
+
+  sl.registerLazySingleton(() => sharedPreferences);
+  sl.registerLazySingleton<FirebaseAuth>(() => FirebaseAuth.instance);
+  sl.registerLazySingleton(() => InternetConnectionChecker());
+
+  // injection_container.dart
+
+  // 1. Daftarkan Interceptor sebagai Singleton
+  sl.registerLazySingleton(() => DioInterceptor());
+
+  // 2. Modifikasi registrasi Dio
+  sl.registerLazySingleton(
+    () => Dio(
+        BaseOptions(
+          // Pastikan IP sesuai dengan laptop Anda yang menjalankan CI4
+          baseUrl: 'https://b89d6b158bc4.ngrok-free.app/api',
+          connectTimeout: const Duration(
+            seconds: 15,
+          ), // Naikkan agar tidak timeout
+          receiveTimeout: const Duration(seconds: 15),
+        ),
+      )
+      ..interceptors.add(
+        sl<DioInterceptor>(),
+      ), // <--- BARIS KRUSIAL: Tambahkan Interceptor di sini
+  );
+
+  // ================= CORE =================
+
+  sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl(sl()));
+
+  // ================= AUTH FEATURE =================
 
   // Bloc
-  sl.registerFactory(() => AuthBloc(loginUseCase: sl(), registerUseCase: sl()));
+  // ================= AUTH FEATURE =================
 
-  // Use cases
+  // Bloc
+  sl.registerFactory(
+    () => AuthBloc(
+      firebaseAuth: sl(),
+      authRemoteDataSource:
+          sl(), // <--- Ubah ini! Kita inject FirebaseAuth langsung
+    ),
+  );
+
+  // UseCases (Boleh dibiarkan atau dihapus jika tidak dipakai)
+  // sl.registerLazySingleton(() => LoginUseCase(sl())); ...
+  // UseCases
   sl.registerLazySingleton(() => LoginUseCase(sl()));
   sl.registerLazySingleton(() => RegisterUseCase(sl()));
 
   // Repository
-  // Repository (BENAR)
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(
       remoteDataSource: sl(),
@@ -45,18 +90,22 @@ Future<void> init() async {
       networkInfo: sl(),
     ),
   );
-  // Data sources
-  sl.registerLazySingleton(() => AuthRemoteDataSource(sl()));
+
+  // Data Sources
+  sl.registerLazySingleton(
+    () => AuthRemoteDataSource(sl<Dio>(), sl<FirebaseAuth>()),
+  );
+
   sl.registerLazySingleton(() => UserLocalDataSource(sl()));
 
-  // ===== Features - Wardrobe =====
+  // ================= WARDROBE FEATURE =================
 
   // Bloc
   sl.registerFactory(
     () => WardrobeBloc(getWardrobeUseCase: sl(), addItemUseCase: sl()),
   );
 
-  // Use cases
+  // UseCases
   sl.registerLazySingleton(() => GetWardrobeUseCase(sl()));
   sl.registerLazySingleton(() => AddWardrobeItemUseCase(sl()));
 
@@ -65,27 +114,6 @@ Future<void> init() async {
     () => WardrobeRepositoryImpl(remoteDataSource: sl(), networkInfo: sl()),
   );
 
-  // Data sources
+  // Data Source
   sl.registerLazySingleton(() => WardrobeRemoteDataSource(sl()));
-
-  // ===== Core =====
-
-  sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl(sl()));
-
-  // ===== External =====
-
-  final sharedPreferences = await SharedPreferences.getInstance();
-  sl.registerLazySingleton(() => sharedPreferences);
-
-  sl.registerLazySingleton(
-    () => Dio(
-      BaseOptions(
-        baseUrl: 'http://localhost:3000', // Ganti dengan URL API kamu
-        connectTimeout: const Duration(seconds: 5),
-        receiveTimeout: const Duration(seconds: 3),
-      ),
-    ),
-  );
-
-  sl.registerLazySingleton(() => InternetConnectionChecker());
 }

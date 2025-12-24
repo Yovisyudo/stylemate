@@ -1,6 +1,6 @@
 
 
-import 'package:stylemate/features/auth/presentation/pages/wardrobe_item.dart';
+import 'package:stylemate/features/wardrobe/domain/entities/wardrobe_item.dart';
 
 abstract class WardrobeEvent {}
 

@@ -1,4 +1,3 @@
-
 import 'package:stylemate/core/error/failures.dart';
 import 'package:stylemate/core/network/network_info.dart';
 import 'package:stylemate/core/utils/either.dart';
@@ -33,24 +32,36 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-  @override
-  Future<Either<Failure, User>> register(
-    String name,
-    String email,
-    String password,
-  ) async {
-    if (await networkInfo.isConnected) {
-      try {
-        final user = await remoteDataSource.register(name, email, password);
-        await localDataSource.cacheUser(user);
-        return Right(user);
-      } on ServerException {
-        return const Left(ServerFailure());
-      }
-    } else {
-      return const Left(NetworkFailure());
+@override
+Future<Either<Failure, User>> register(
+  String name,
+  String email,
+  String password,
+) async {
+  if (await networkInfo.isConnected) {
+    try {
+      // 1. Register Firebase
+      final token = await remoteDataSource.registerFirebase(
+        email,
+        password,
+      );
+
+      // 2. Register Backend
+      final user = await remoteDataSource.registerBackend(
+        token,
+        name,
+        email,
+      );
+
+      await localDataSource.cacheUser(user);
+      return Right(user);
+    } on ServerException {
+      return const Left(ServerFailure());
     }
+  } else {
+    return const Left(NetworkFailure());
   }
+}
 
   @override
   Future<Either<Failure, void>> logout() async {

@@ -1,5 +1,3 @@
-
-
 import 'package:stylemate/features/auth/domain/entities/user.dart';
 
 class UserModel extends User {
@@ -12,13 +10,16 @@ class UserModel extends User {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['user_id'],
-      name: json['name'],
-      email: json['email'],
+      // Kita paksa konversi ke int untuk berjaga-jaga jika server mengirim String
+      id:
+          json['user_id'] is String
+              ? int.parse(json['user_id'])
+              : json['user_id'] as int,
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
       stylePreference: json['style_preference'] ?? 'casual',
     );
   }
-
   Map<String, dynamic> toJson() {
     return {
       'user_id': id,

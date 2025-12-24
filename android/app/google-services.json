@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "75353642932",
+    "project_id": "api-login-78da7",
+    "storage_bucket": "api-login-78da7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:75353642932:android:d9a62196e4cc20551204e1",
+        "android_client_info": {
+          "package_name": "com.company.stylemate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyArpeeXcE3uTPL_z2epfqZSqc5K8QKnuqE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
