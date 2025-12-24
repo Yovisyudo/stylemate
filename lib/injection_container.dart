@@ -21,8 +21,10 @@ import 'package:stylemate/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:stylemate/features/wardrobe/data/datasources/wardrobe_remote_data_source.dart';
 import 'package:stylemate/features/wardrobe/domain/repositories/wardrobe_repository_impl.dart';
 import 'package:stylemate/features/wardrobe/domain/repositories/wardrobe_repositorty.dart';
+import 'package:stylemate/features/wardrobe/domain/usecases/delete_wardrobe_usecase.dart';
 import 'package:stylemate/features/wardrobe/domain/usecases/get_wardrobe_usecase.dart';
 import 'package:stylemate/features/wardrobe/domain/usecases/add_item_usecase.dart';
+import 'package:stylemate/features/wardrobe/domain/usecases/update_wardrobe_usecase.dart';
 import 'package:stylemate/features/wardrobe/presentation/bloc/wardrobe_bloc.dart';
 
 final sl = GetIt.instance;
@@ -46,7 +48,7 @@ Future<void> init() async {
     () => Dio(
         BaseOptions(
           // Pastikan IP sesuai dengan laptop Anda yang menjalankan CI4
-          baseUrl: 'https://b89d6b158bc4.ngrok-free.app/api',
+          baseUrl: 'http://10.42.189.26:8080/api',
           connectTimeout: const Duration(
             seconds: 15,
           ), // Naikkan agar tidak timeout
@@ -102,12 +104,18 @@ Future<void> init() async {
 
   // Bloc
   sl.registerFactory(
-    () => WardrobeBloc(getWardrobeUseCase: sl(), addItemUseCase: sl()),
+    () => WardrobeBloc(
+      getWardrobeUseCase: sl(),
+      addItemUseCase: sl(),
+      updateItemUseCase: sl(), // ✅ Tambah ini
+      deleteItemUseCase: sl(), // ✅ Tambah ini
+    ),
   );
-
   // UseCases
   sl.registerLazySingleton(() => GetWardrobeUseCase(sl()));
   sl.registerLazySingleton(() => AddWardrobeItemUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateWardrobeItemUseCase(sl())); // ✅ WAJIB
+  sl.registerLazySingleton(() => DeleteWardrobeItemUseCase(sl()));
 
   // Repository
   sl.registerLazySingleton<WardrobeRepository>(

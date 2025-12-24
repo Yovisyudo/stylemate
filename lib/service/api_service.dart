@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 class ApiService {
   //static const String baseUrl = 'http://10.0.2.2:8080/api';
 
-  static const String baseUrl = 'https://b89d6b158bc4.ngrok-free.app/api';
+  static const String baseUrl = 'http://10.42.189.26:8080/api';
   //Android Emulator: 10.0.2.2
   //Real device: IP laptop (ex: 192.168.1.10)
 

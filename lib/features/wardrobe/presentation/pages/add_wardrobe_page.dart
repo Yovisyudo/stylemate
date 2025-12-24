@@ -4,8 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import '../bloc/wardrobe_bloc.dart';
 import '../bloc/wardrobe_event.dart';
-import '../bloc/wardrobe_state.dart';
-import '../../domain/entities/wardrobe_item.dart';
 
 class AddWardrobePage extends StatefulWidget {
   const AddWardrobePage({super.key});
@@ -23,7 +21,7 @@ class _AddWardrobePageState extends State<AddWardrobePage> {
   File? _imageFile;
   String? _selectedCategoryId;
 
-  // 2. Senarai kategori (Anda boleh buat ini dinamik nanti, buat masa ini kita guna hardcoded ikut DB anda)
+  // Senarai kategori (sesuai dengan DB)
   final List<Map<String, dynamic>> _categories = [
     {'id': '1', 'name': 'Atasan'},
     {'id': '2', 'name': 'Bawahan'},
@@ -42,24 +40,29 @@ class _AddWardrobePageState extends State<AddWardrobePage> {
     }
   }
 
-  // Di dalam AddWardrobePage
+  // PERBAIKAN: Kirim Map, bukan WardrobeItem
   void _submitData() {
     if (_formKey.currentState!.validate() && _imageFile != null) {
-      // Tukar String ID kepada int untuk dihantar ke MySQL
-      final int catId = int.parse(_selectedCategoryId!);
+      final int categoryId = int.parse(_selectedCategoryId!);
 
-      final newItem = WardrobeItem(
-        id: 0, // ID 0 kerana MySQL akan buat Auto Increment (item_id)
-        name: _nameController.text.trim(),
-        categoryId: catId, // Menggunakan categoryId (int) yang betul
-        color: _colorController.text.trim(),
-        style: _styleController.text.trim(),
-        imageUrl: _imageFile!.path, // Path gambar dari galeri/kamera
+      // Kirim sebagai Map<String, dynamic>
+      context.read<WardrobeBloc>().add(
+        AddItemEvent(
+          item: {
+            'name': _nameController.text.trim(),
+            'category_id': categoryId,
+            'color': _colorController.text.trim(),
+            'style': _styleController.text.trim(),
+            'image_path': _imageFile!.path,
+          },
+        ),
       );
 
-      // Hantar event ke Bloc
-      context.read<WardrobeBloc>().add(AddItemEvent(newItem));
       Navigator.pop(context);
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Item added successfully!')));
     } else if (_imageFile == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Sila pilih gambar pakaian')),
@@ -135,11 +138,7 @@ class _AddWardrobePageState extends State<AddWardrobePage> {
               _buildLabel('Category'),
               DropdownButtonFormField<String>(
                 value: _selectedCategoryId,
-                decoration: const InputDecoration(
-                  labelText: 'Kategori Pakaian',
-                  filled: true,
-                  fillColor: Color(0xFFF5F5F5),
-                ),
+                decoration: _inputDecoration('Pilih kategori'),
                 items:
                     _categories.map((cat) {
                       return DropdownMenuItem<String>(
@@ -155,7 +154,6 @@ class _AddWardrobePageState extends State<AddWardrobePage> {
                 validator:
                     (value) => value == null ? 'Sila pilih kategori' : null,
               ),
-
               const SizedBox(height: 20),
 
               Row(
@@ -239,5 +237,13 @@ class _AddWardrobePageState extends State<AddWardrobePage> {
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _colorController.dispose();
+    _styleController.dispose();
+    super.dispose();
   }
 }

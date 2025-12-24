@@ -6,30 +6,39 @@ class WardrobeRemoteDataSource {
 
   // Tambahkan konstanta base URL untuk gambar
   // Sesuaikan IP 172.20.8.25 dengan IP laptop Anda saat ini
-  static const String _baseImageUrl = "https://b89d6b158bc4.ngrok-free.app/uploads/";
+  static const String _baseImageUrl = "http://10.42.189.26:8080/uploads/";
 
   WardrobeRemoteDataSource(this.dio);
 
-  Future<List<WardrobeItemModel>> getWardrobe() async {
-    try {
-      final response = await dio.get('/wardrobe');
+  // wardrobe_remote_data_source.dart
+  // lib/features/wardrobe/data/datasources/wardrobe_remote_data_source.dart
 
-      return (response.data as List).map((e) {
-        // Manipulasi data JSON sebelum dikonversi ke Model
-        final Map<String, dynamic> itemJson = Map<String, dynamic>.from(e);
+Future<List<WardrobeItemModel>> getWardrobe() async {
+  try {
+    final response = await dio.get('/wardrobe');
 
-        // Cek jika ada image_url, gabungkan dengan base URL
-        if (itemJson['image_url'] != null &&
-            itemJson['image_url'].toString().isNotEmpty) {
-          itemJson['image_url'] = _baseImageUrl + itemJson['image_url'];
+    return (response.data as List).map((e) {
+      final Map<String, dynamic> itemJson = Map<String, dynamic>.from(e);
+      String rawUrl = itemJson['image_url']?.toString().trim() ?? "";
+
+      if (rawUrl.isNotEmpty) {
+        // Jika DB menyimpan URL lengkap (seperti di gambar database Anda)
+        if (rawUrl.startsWith('http://localhost')) {
+          // Ganti 'localhost' menjadi IP laptop agar bisa diakses HP Infinix
+          itemJson['image_url'] = rawUrl.replaceAll('localhost', '10.42.189.26');
+        } 
+        // Jika DB hanya menyimpan nama file
+        else if (!rawUrl.startsWith('http')) {
+          itemJson['image_url'] = _baseImageUrl + rawUrl;
         }
+      }
 
-        return WardrobeItemModel.fromJson(itemJson);
-      }).toList();
-    } catch (e) {
-      rethrow;
-    }
+      return WardrobeItemModel.fromJson(itemJson);
+    }).toList();
+  } catch (e) {
+    rethrow;
   }
+}
 
   Future<void> addWardrobe(Map<String, dynamic> data) async {
     try {

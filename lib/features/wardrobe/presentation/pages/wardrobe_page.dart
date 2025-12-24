@@ -16,7 +16,6 @@ class _WardrobePageState extends State<WardrobePage> {
   @override
   void initState() {
     super.initState();
-    // Memanggil data saat halaman dibuka
     context.read<WardrobeBloc>().add(LoadWardrobeEvent());
   }
 
@@ -26,7 +25,7 @@ class _WardrobePageState extends State<WardrobePage> {
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text(
-          'My Wardrobe',
+          'Lemari',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
@@ -58,11 +57,11 @@ class _WardrobePageState extends State<WardrobePage> {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AddWardrobePage()),
-          ); // Navigasi ke halaman tambah baju (AddWardrobePage)
+          );
         },
         label: const Text('Add Item'),
         icon: const Icon(Icons.add),
-        backgroundColor: Colors.black,
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       ),
     );
   }
@@ -87,10 +86,10 @@ class _WardrobePageState extends State<WardrobePage> {
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, // 2 kolom agar terlihat modern
+        crossAxisCount: 2,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
-        childAspectRatio: 0.75, // Mengatur tinggi card
+        childAspectRatio: 0.75,
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {
@@ -110,24 +109,88 @@ class _WardrobePageState extends State<WardrobePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Bagian Gambar
+              // Bagian Gambar dengan Menu Options
               Expanded(
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
-                  ),
-                  child:
-                      item.imageUrl != null
-                          ? Image.network(
-                            item.imageUrl!, // URL dari backend CI4
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            errorBuilder:
-                                (context, error, stackTrace) => const Center(
-                                  child: Icon(Icons.broken_image),
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                      child:
+                          item.imageUrl != null
+                              ? Image.network(
+                                item.imageUrl!,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                errorBuilder: (context, error, stackTrace) {
+                                  debugPrint(
+                                    "GAGAL MEMUAT GAMBAR: ${item.imageUrl}",
+                                  );
+                                  return const Center(
+                                    child: Icon(
+                                      Icons.broken_image,
+                                      color: Colors.red,
+                                    ),
+                                  );
+                                },
+                              )
+                              : const Center(
+                                child: Icon(Icons.image, size: 50),
+                              ),
+                    ),
+                    // Menu Options (Edit & Delete)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert, size: 20),
+                          onSelected: (value) {
+                            if (value == 'edit') {
+                              _showEditDialog(item);
+                            } else if (value == 'delete') {
+                              _showDeleteDialog(item);
+                            }
+                          },
+                          itemBuilder:
+                              (context) => [
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit, size: 20),
+                                      SizedBox(width: 8),
+                                      Text('Edit'),
+                                    ],
+                                  ),
                                 ),
-                          )
-                          : const Center(child: Icon(Icons.image, size: 50)),
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.delete,
+                                        size: 20,
+                                        color: Colors.red,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Delete',
+                                        style: TextStyle(color: Colors.red),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               // Bagian Info
@@ -147,7 +210,7 @@ class _WardrobePageState extends State<WardrobePage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      item.categoryName ?? 'Uncategorized', // Hasil JOIN CI4
+                      item.categoryName ?? 'Uncategorized',
                       style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     ),
                     const SizedBox(height: 4),
@@ -157,9 +220,7 @@ class _WardrobePageState extends State<WardrobePage> {
                           width: 12,
                           height: 12,
                           decoration: BoxDecoration(
-                            color:
-                                Colors
-                                    .blue, // Bisa diganti sesuai variabel color item
+                            color: Colors.blue,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -180,6 +241,104 @@ class _WardrobePageState extends State<WardrobePage> {
           ),
         );
       },
+    );
+  }
+
+  // Dialog untuk Edit Item
+  void _showEditDialog(dynamic item) {
+    final nameController = TextEditingController(text: item.name);
+    final styleController = TextEditingController(text: item.style ?? '');
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Edit Item'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: styleController,
+                  decoration: const InputDecoration(
+                    labelText: 'Style',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  // Trigger update event
+                  context.read<WardrobeBloc>().add(
+                    UpdateWardrobeEvent(
+                      id: item.id,
+                      data: {
+                        'name': nameController.text,
+                        'style': styleController.text,
+                        'category_id': item.categoryId,
+                        'color': item.color,
+                      },
+                    ),
+                  );
+                  Navigator.pop(context);
+
+                  // Show success message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Item updated successfully')),
+                  );
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  // Dialog untuk Delete Item
+  void _showDeleteDialog(dynamic item) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Delete Item'),
+            content: Text('Are you sure you want to delete "${item.name}"?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  // Trigger delete event - PERBAIKAN: gunakan DeleteWardrobeEvent
+                  context.read<WardrobeBloc>().add(
+                    DeleteWardrobeEvent(id: item.id),
+                  );
+                  Navigator.pop(context);
+
+                  // Show success message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Item deleted successfully')),
+                  );
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
     );
   }
 }
