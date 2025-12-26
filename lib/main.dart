@@ -50,6 +50,7 @@ class MyApp extends StatelessWidget {
         routes: {
           '/login': (context) => const LoginPage(),
           '/home': (context) => const StyleMateHome(),
+          
         },
       ),
     );

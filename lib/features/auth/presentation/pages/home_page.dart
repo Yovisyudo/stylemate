@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:stylemate/features/event/presentation/pages/event_page.dart';
 import 'package:stylemate/features/wardrobe/presentation/pages/wardrobe_page.dart';
 // Pastikan import file WardrobePage Anda di sini
 
@@ -24,7 +25,8 @@ class _StyleMateHomeState extends State<StyleMateHome> {
     // List halaman yang akan ditampilkan berdasarkan index menu
     final List<Widget> _pages = [
       _HomeContent(), // Widget isi beranda yang dipisah
-      const WardrobePage(), // Halaman Lemari Anda
+      const WardrobePage(),
+      const EventPage(), // Halaman Lemari Anda
       const Center(child: Text("AI Recommendation Page")),
       const Center(child: Text("Event Page")),
       const Center(child: Text("Profile Page")),

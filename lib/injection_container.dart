@@ -16,6 +16,13 @@ import 'package:stylemate/features/auth/domain/repositories/auth_repository.dart
 import 'package:stylemate/features/auth/domain/usecases/login_usecase.dart';
 import 'package:stylemate/features/auth/domain/usecases/register_usecase.dart';
 import 'package:stylemate/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:stylemate/features/event/data/datasources/event_remote_data_source.dart';
+import 'package:stylemate/features/event/domain/repositories/event_repository.dart';
+import 'package:stylemate/features/event/domain/repositories/event_repository_impl.dart';
+import 'package:stylemate/features/event/domain/usecases/create_event_usecase.dart';
+import 'package:stylemate/features/event/domain/usecases/delete_event_usecase.dart';
+import 'package:stylemate/features/event/domain/usecases/get_events_usecase.dart';
+import 'package:stylemate/features/event/presentation/bloc/event_bloc.dart';
 
 // Wardrobe Feature
 import 'package:stylemate/features/wardrobe/data/datasources/wardrobe_remote_data_source.dart';
@@ -48,7 +55,7 @@ Future<void> init() async {
     () => Dio(
         BaseOptions(
           // Pastikan IP sesuai dengan laptop Anda yang menjalankan CI4
-          baseUrl: 'http://10.42.189.26:8080/api',
+          baseUrl: 'http://192.168.1.8:8080/api',
           connectTimeout: const Duration(
             seconds: 15,
           ), // Naikkan agar tidak timeout
@@ -67,6 +74,29 @@ Future<void> init() async {
   // ================= AUTH FEATURE =================
 
   // Bloc
+  //! Fitur - Event
+  // Bloc
+  sl.registerFactory(
+    () => EventBloc(
+      getEventsUseCase: sl(),
+      createEventUseCase: sl(),
+      deleteEventUseCase: sl(),
+    ),
+  );
+
+  sl.registerLazySingleton(() => GetEventsUseCase(sl()));
+  sl.registerLazySingleton(() => CreateEventUseCase(sl()));
+  sl.registerLazySingleton(() => DeleteEventUseCase(sl()));
+
+  sl.registerLazySingleton<EventRepository>(
+    () => EventRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // Data sources
+  sl.registerLazySingleton<EventRemoteDataSource>(
+    // Menggunakan instance Dio yang sama dengan Wardrobe
+    () => EventRemoteDataSource(sl()),
+  );
   // ================= AUTH FEATURE =================
 
   // Bloc

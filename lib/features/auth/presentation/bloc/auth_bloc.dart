@@ -6,6 +6,7 @@ import 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final FirebaseAuth firebaseAuth;
+
   final AuthRemoteDataSource
   authRemoteDataSource; // Instance member untuk akses ke MySQL
 
@@ -100,7 +101,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     if (user == null) {
       emit(AuthInitial());
     } else {
-      final token = await user.getIdToken();
+      final token = await user.getIdToken(true);
+      print('🔥 FIREBASE ID TOKEN 🔥');
+      print(token);
+
       emit(AuthAuthenticated(uid: user.uid, email: user.email!, token: token!));
     }
   }
