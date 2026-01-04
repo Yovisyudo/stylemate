@@ -1,7 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart'; // Menangani ralat context.read
+import 'package:stylemate/features/auth/presentation/bloc/recommendation_bloc.dart';
+import 'package:stylemate/features/auth/presentation/bloc/recommendation_event.dart';
+import 'package:stylemate/features/auth/presentation/pages/recommendation_page.dart';
+import 'package:stylemate/features/event/domain/usecases/get_events_usecase.dart';
+
+// IMPORT FITUR REKOMENDASI (Clean Architecture)
+
+// IMPORT FITUR EVENT (Untuk Data Dinamis)
+import 'package:stylemate/features/event/presentation/bloc/event_bloc.dart';
+import 'package:stylemate/features/event/presentation/bloc/event_state.dart';
+import 'package:stylemate/features/event/presentation/bloc/event_event.dart';
 import 'package:stylemate/features/event/presentation/pages/event_page.dart';
+
+// IMPORT FITUR LAIN
 import 'package:stylemate/features/wardrobe/presentation/pages/wardrobe_page.dart';
-// Pastikan import file WardrobePage Anda di sini
 
 class StyleMateHome extends StatefulWidget {
   const StyleMateHome({super.key});
@@ -13,7 +26,14 @@ class StyleMateHome extends StatefulWidget {
 class _StyleMateHomeState extends State<StyleMateHome> {
   int _currentIndex = 0;
 
-  // Fungsi untuk berpindah halaman
+  final List<Widget> _pages = [
+    const _HomeContent(),
+    const WardrobePage(),
+    const RecommendationPage(eventId: 0),
+    const EventPage(),
+    const Center(child: Text("Profile Page")),
+  ];
+
   void _onItemTapped(int index) {
     setState(() {
       _currentIndex = index;
@@ -22,40 +42,19 @@ class _StyleMateHomeState extends State<StyleMateHome> {
 
   @override
   Widget build(BuildContext context) {
-    // List halaman yang akan ditampilkan berdasarkan index menu
-    final List<Widget> _pages = [
-      _HomeContent(), // Widget isi beranda yang dipisah
-      const WardrobePage(),
-      const EventPage(), // Halaman Lemari Anda
-      const Center(child: Text("AI Recommendation Page")),
-      const Center(child: Text("Event Page")),
-      const Center(child: Text("Profile Page")),
-    ];
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        bool isTablet = constraints.maxWidth >= 600;
-        return Scaffold(
-          body:
-              isTablet
-                  ? _buildTabletLayout(_pages[_currentIndex])
-                  : _pages[_currentIndex], // Menampilkan halaman aktif
-          bottomNavigationBar: isTablet ? null : _buildBottomNav(),
-        );
-      },
+    return Scaffold(
+      body: _pages[_currentIndex],
+      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
-  // ============================================================
-  //                    📱 MOBILE COMPONENTS
-  // ============================================================
   Widget _buildBottomNav() {
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: Colors.black,
+      selectedItemColor: Colors.purple,
       unselectedItemColor: Colors.grey,
       currentIndex: _currentIndex,
-      onTap: _onItemTapped, // Menangani klik menu
+      onTap: _onItemTapped,
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: "Beranda"),
         BottomNavigationBarItem(icon: Icon(Icons.inventory_2), label: "Lemari"),
@@ -68,55 +67,20 @@ class _StyleMateHomeState extends State<StyleMateHome> {
       ],
     );
   }
-
-  // ============================================================
-  //                    🖥️ TABLET LAYOUT
-  // ============================================================
-  Widget _buildTabletLayout(Widget currentPage) {
-    return Row(
-      children: [
-        Container(
-          width: 90,
-          color: const Color(0xffA7CCEA),
-          child: Column(
-            children: [
-              const SizedBox(height: 40),
-              _sidebarIcon(Icons.home, 0),
-              _sidebarIcon(Icons.inventory_2, 1),
-              _sidebarIcon(Icons.auto_awesome, 2),
-              _sidebarIcon(Icons.event, 3),
-              _sidebarIcon(Icons.person, 4),
-            ],
-          ),
-        ),
-        Expanded(
-          child: currentPage, // Menampilkan halaman yang dipilih di tablet
-        ),
-      ],
-    );
-  }
-
-  Widget _sidebarIcon(IconData icon, int index) {
-    return GestureDetector(
-      onTap: () => _onItemTapped(index), // Klik icon sidebar
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 22),
-        child: Icon(
-          icon,
-          size: 30,
-          color: _currentIndex == index ? Colors.white : Colors.black87,
-        ),
-      ),
-    );
-  }
 }
 
 class _HomeContent extends StatelessWidget {
+  const _HomeContent();
+
   @override
   Widget build(BuildContext context) {
+    // Memicu pengambilan data event saat Beranda dibuka
+    // ✅ BENAR
+    context.read<EventBloc>().add(LoadEventsEvent());
+
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -132,121 +96,123 @@ class _HomeContent extends StatelessWidget {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            _eventCard("Kondangan", "Pakaian Batik", "21-12-2025", "30°"),
-            _eventCard("Kencan Malam", "Pakaian Romantis", "24-12-2025", "30°"),
-            _eventCard("Rapat Ormawa", "Pakaian Formal", "21-12-2025", "30°"),
+
+            // REVISI: Mengambil data dinamis menggunakan BlocBuilder
+            BlocBuilder<EventBloc, EventState>(
+              builder: (context, state) {
+                if (state is EventLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (state is EventLoaded) {
+                  if (state.events.isEmpty) {
+                    return const Text("Tidak ada acara dalam waktu dekat.");
+                  }
+                  return Column(
+                    children:
+                        state.events.map((event) {
+                          return _eventCard(
+                            context,
+                            event.name, // Sesuai dengan getter model UserEvent
+                            event.date.toString(),
+                            "${event.weatherTemp}°", // Sesuai dengan getter model UserEvent
+                            event.id, // Sesuai dengan getter model UserEvent
+                          );
+                        }).toList(),
+                  );
+                }
+                return const Text("Gagal memuat data event.");
+              },
+            ),
           ],
         ),
       ),
     );
   }
 
-  // Copy paste semua Helper Widget Anda (_headerCard, _eventCard, _infoBox) di sini...
   Widget _headerCard() {
-    /* ... kode Anda ... */
-    return Container();
-  }
-
-  Widget _eventCard(String t, String c, String d, String te) {
-    /* ... kode Anda ... */
-    return Container();
-  }
-
-  Widget _infoBox(String t, String v) {
-    /* ... kode Anda ... */
-    return Column();
-  }
-}
-
-// ============================================================
-//                COMPONENTS MOBILE + TABLET
-// ============================================================
-Widget _sidebarIcon(IconData icon) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 22),
-    child: Icon(icon, size: 30, color: Colors.black87),
-  );
-}
-
-Widget _headerCard() {
-  return Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: const Color(0xffAEC9FF),
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: [
-        _infoBox("Total Items", "12"),
-        _infoBox("Acara Mendatang", "4"),
-      ],
-    ),
-  );
-}
-
-Widget _infoBox(String title, String value) {
-  return Column(
-    children: [
-      Text(
-        title,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xffAEC9FF),
+        borderRadius: BorderRadius.circular(12),
       ),
-      const SizedBox(height: 6),
-      Text(
-        value,
-        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _InfoBox(title: "Items", value: "12"),
+          _InfoBox(title: "Events", value: "4"),
+        ],
       ),
-    ],
-  );
-}
+    );
+  }
 
-Widget _eventCard(String title, String category, String date, String temp) {
-  return Container(
-    margin: const EdgeInsets.only(bottom: 16),
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: const Color(0xffD8E3FA),
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-            Row(
-              children: [
-                Text(date),
-                const SizedBox(width: 6),
-                const Icon(Icons.cloud, size: 18),
-                Text(temp),
-              ],
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 4),
-        Text(category),
-
-        const SizedBox(height: 10),
-
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xffAEC9FF),
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            onPressed: () {},
-            child: const Text("Get AI Rekomendasi"),
+  Widget _eventCard(
+    BuildContext context,
+    String title,
+    String date,
+    String temp,
+    int eventId,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xffD8E3FA),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text("$date | $temp"),
+            ],
           ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple.shade100,
+                foregroundColor: Colors.purple.shade900,
+              ),
+              onPressed: () {
+                // PERBAIKAN SINTAKSIS: Menghapus titik koma di dalam parameter
+                context.read<RecommendationBloc>().add(
+                  GetAiRecommendationEvent(eventId),
+                );
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RecommendationPage(eventId: eventId),
+                  ),
+                );
+              },
+              child: const Text("Get AI Recommendation"),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoBox extends StatelessWidget {
+  final String title;
+  final String value;
+  const _InfoBox({required this.title, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
       ],
-    ),
-  );
+    );
+  }
 }

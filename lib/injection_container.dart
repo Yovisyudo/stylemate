@@ -10,12 +10,17 @@ import 'package:stylemate/core/network/network_info.dart';
 
 // Auth Feature
 import 'package:stylemate/features/auth/data/datasources/auth_remote_data_source.dart';
+import 'package:stylemate/features/auth/data/datasources/recommendation_remote_data_source.dart';
 import 'package:stylemate/features/auth/data/datasources/user_local_data_source.dart';
 import 'package:stylemate/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:stylemate/features/auth/data/repositories/recommendation_repository.dart';
+import 'package:stylemate/features/auth/data/repositories/recommendation_repository_impl.dart';
 import 'package:stylemate/features/auth/domain/repositories/auth_repository.dart';
+import 'package:stylemate/features/auth/domain/usecases/get_recommendation_usecase.dart';
 import 'package:stylemate/features/auth/domain/usecases/login_usecase.dart';
 import 'package:stylemate/features/auth/domain/usecases/register_usecase.dart';
 import 'package:stylemate/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:stylemate/features/auth/presentation/bloc/recommendation_bloc.dart';
 import 'package:stylemate/features/event/data/datasources/event_remote_data_source.dart';
 import 'package:stylemate/features/event/domain/repositories/event_repository.dart';
 import 'package:stylemate/features/event/domain/repositories/event_repository_impl.dart';
@@ -55,11 +60,11 @@ Future<void> init() async {
     () => Dio(
         BaseOptions(
           // Pastikan IP sesuai dengan laptop Anda yang menjalankan CI4
-          baseUrl: 'http://192.168.1.8:8080/api',
+          baseUrl: 'http://192.168.1.10:8080/api',
           connectTimeout: const Duration(
-            seconds: 15,
+            seconds: 30,
           ), // Naikkan agar tidak timeout
-          receiveTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 30),
         ),
       )
       ..interceptors.add(
@@ -106,6 +111,19 @@ Future<void> init() async {
       authRemoteDataSource:
           sl(), // <--- Ubah ini! Kita inject FirebaseAuth langsung
     ),
+  );
+  sl.registerFactory(() => RecommendationBloc(getRecommendationsUseCase: sl()));
+  // Use cases
+  sl.registerLazySingleton(() => GetRecommendationsUseCase(sl()));
+
+  // Repository
+  sl.registerLazySingleton<RecommendationRepository>(
+    () => RecommendationRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // Data sources
+  sl.registerLazySingleton<RecommendationRemoteDataSource>(
+    () => RecommendationRemoteDataSource(sl()), // sl() merujuk ke instance Dio
   );
 
   // UseCases (Boleh dibiarkan atau dihapus jika tidak dipakai)
