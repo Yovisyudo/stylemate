@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:stylemate/features/auth/domain/entities/recommendation.dart';
 import '../models/recommendation_model.dart';
 
 class RecommendationRemoteDataSource {
@@ -10,84 +11,49 @@ class RecommendationRemoteDataSource {
 
   RecommendationRemoteDataSource(this.dio);
 
-  Future<List<RecommendationModel>> getRecommendations(int eventId) async {
+  @override
+  Future<List<Recommendation>> getRecommendations(int eventId) async {
     try {
-      final String? firebaseUid = FirebaseAuth.instance.currentUser?.uid;
+      final response = await dio.get('/recommendations/$eventId');
 
-      print('🔵 Fetching recommendations for event: $eventId');
+      // 1️⃣ Validasi response
+      if (response.data == null || response.data is! Map<String, dynamic>) {
+        throw Exception('Response tidak valid');
+      }
 
-      final response = await dio.get(
-        '/recommendations/$eventId',
-        options: Options(headers: {'X-Firebase-UID': firebaseUid}),
+      final Map<String, dynamic> body = Map<String, dynamic>.from(
+        response.data,
       );
 
-      dynamic data;
-      if (response.data is Map<String, dynamic>) {
-        if (response.data.containsKey('recommendations')) {
-          data = response.data['recommendations'];
-        } else if (response.data.containsKey('data')) {
-          data = response.data['data'];
-        } else {
-          data = response.data;
-        }
-      } else if (response.data is List) {
-        data = response.data;
-      } else {
-        throw Exception(
-          'Format response tidak didukung: ${response.data.runtimeType}',
-        );
+      // 2️⃣ Ambil array recommendations
+      if (!body.containsKey('recommendations') ||
+          body['recommendations'] is! List) {
+        throw Exception('Key "recommendations" tidak ditemukan');
       }
 
-      if (data is! List) {
-        throw Exception('Data bukan array. Type: ${data.runtimeType}');
-      }
+      final List rawList = body['recommendations'];
 
-      final recommendations =
-          (data as List).map((json) {
-            final Map<String, dynamic> recJson = Map<String, dynamic>.from(
-              json,
+      // 3️⃣ Parse ke Model (Model EXTENDS Entity)
+      final List<Recommendation> recommendations =
+          rawList.map((json) {
+            return RecommendationModel.fromJson(
+              Map<String, dynamic>.from(json),
             );
-
-            // 🔥 FIX UTAMA: perbaiki image di DALAM items
-            if (recJson['items'] is List) {
-              recJson['items'] =
-                  (recJson['items'] as List).map((item) {
-                    final Map<String, dynamic> itemJson =
-                        Map<String, dynamic>.from(item);
-
-                    String rawUrl =
-                        itemJson['image_url'] ?? itemJson['image'] ?? "";
-
-                    rawUrl = rawUrl.toString().trim();
-
-                    if (rawUrl.isNotEmpty) {
-                      if (rawUrl.startsWith('http')) {
-                        itemJson['image_url'] = rawUrl
-                            .replaceAll('localhost', _activeIp)
-                            .replaceAll('127.0.0.1', _activeIp);
-                      } else {
-                        itemJson['image_url'] = _baseImageUrl + rawUrl;
-                      }
-                    }
-
-                    print('🟢 ITEM IMAGE FINAL: ${itemJson['image_url']}');
-                    return itemJson;
-                  }).toList();
-            }
-
-            return RecommendationModel.fromJson(recJson);
           }).toList();
 
-      print('✅ Berhasil parse ${recommendations.length} recommendation');
       return recommendations;
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['message'] ?? 'Gagal memanggil AI');
+      throw Exception(
+        e.response?.data?['message'] ?? 'Gagal mengambil recommendation',
+      );
+    } catch (e) {
+      throw Exception('Parsing recommendation gagal: $e');
     }
   }
 
-  // ✅ SEKARANG POSISI SUDAH BENAR
   Future<void> saveOutfit(int eventId, List<int> itemIds) async {
     final String? firebaseUid = FirebaseAuth.instance.currentUser?.uid;
+
     await dio.post(
       '/save-outfit',
       data: {'event_id': eventId, 'item_ids': itemIds},

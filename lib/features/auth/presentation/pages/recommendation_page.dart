@@ -6,15 +6,21 @@ import 'package:stylemate/features/auth/presentation/bloc/recommendation_state.d
 
 class RecommendationPage extends StatelessWidget {
   final int eventId;
+
   const RecommendationPage({super.key, required this.eventId});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("AI Stylist Recommendation")),
+      appBar: AppBar(
+        title: const Text('AI Stylist Recommendation'),
+        centerTitle: true,
+      ),
       body: BlocBuilder<RecommendationBloc, RecommendationState>(
         builder: (context, state) {
-          // 1. Tangani State Loading
+          /// =========================
+          /// LOADING
+          /// =========================
           if (state is RecommendationLoading) {
             return const Center(
               child: Column(
@@ -22,18 +28,24 @@ class RecommendationPage extends StatelessWidget {
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
-                  Text("Gemini sedang memilih outfit terbaik..."),
+                  Text(
+                    'AI sedang memilih outfit terbaik...',
+                    textAlign: TextAlign.center,
+                  ),
                 ],
               ),
             );
           }
 
-          // 2. Tangani State Loaded
+          /// =========================
+          /// LOADED
+          /// =========================
           if (state is RecommendationLoaded) {
             if (state.recommendations.isEmpty) {
               return const Center(
                 child: Text(
-                  "Baju di lemari tidak ada yang cocok dengan event ini.",
+                  'Tidak ada outfit yang cocok untuk event ini.',
+                  textAlign: TextAlign.center,
                 ),
               );
             }
@@ -42,16 +54,18 @@ class RecommendationPage extends StatelessWidget {
               itemCount: state.recommendations.length,
               itemBuilder: (context, index) {
                 final rec = state.recommendations[index];
+
                 return Card(
                   margin: const EdgeInsets.all(20),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   elevation: 5,
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
+                        /// ===== Reason
                         Text(
                           rec.reason,
                           textAlign: TextAlign.center,
@@ -60,106 +74,64 @@ class RecommendationPage extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        Text(
-                          rec.weatherTip,
-                          style: const TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const Divider(height: 30),
 
-                        // REVISI: Tampilan Grid agar item pakaian berdampingan
+                        const SizedBox(height: 8),
+
+                        /// ===== Weather Tip
+                        if (rec.weatherTip.isNotEmpty)
+                          Text(
+                            rec.weatherTip,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.blue,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+
+                        const Divider(height: 32),
+
+                        /// ===== Items Grid
                         Expanded(
                           child: GridView.builder(
-                            padding: const EdgeInsets.symmetric(vertical: 10),
                             gridDelegate:
                                 const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount:
-                                      2, // Menampilkan 2 item per baris
-                                  crossAxisSpacing: 10,
-                                  mainAxisSpacing: 10,
+                                  crossAxisCount: 2,
+                                  crossAxisSpacing: 12,
+                                  mainAxisSpacing: 12,
                                   childAspectRatio: 0.75,
                                 ),
                             itemCount: rec.items.length,
                             itemBuilder: (context, i) {
                               final item = rec.items[i];
+
                               return Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   Expanded(
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(12),
                                       child: Image.network(
-                                        item.imageUrl, // ✅ Cukup begini saja, karena URL sudah lengkap dari Data Source
+                                        item.image,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (
-                                          context,
-                                          error,
-                                          stackTrace,
-                                        ) {
-                                          // Debugging: Cek apa URL yang error
-                                          print(
-                                            "Gagal memuat gambar: ${item.imageUrl}",
-                                          );
-                                          return Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
+                                        errorBuilder:
+                                            (_, __, ___) => const Center(
+                                              child: Icon(
                                                 Icons.broken_image,
                                                 color: Colors.grey,
                                               ),
-                                              Text(
-                                                "No Image",
-                                                style: TextStyle(
-                                                  fontSize: 10,
-                                                  color: Colors.grey,
-                                                ),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                        loadingBuilder: (
-                                          context,
-                                          child,
-                                          loadingProgress,
-                                        ) {
-                                          if (loadingProgress == null)
-                                            return child;
-                                          return Center(
-                                            child: CircularProgressIndicator(
-                                              value:
-                                                  loadingProgress
-                                                              .expectedTotalBytes !=
-                                                          null
-                                                      ? loadingProgress
-                                                              .cumulativeBytesLoaded /
-                                                          loadingProgress
-                                                              .expectedTotalBytes!
-                                                      : null,
                                             ),
-                                          );
-                                        },
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  const SizedBox(height: 6),
                                   Text(
-                                    item.name,
+                                    item.categoryName,
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
+                                      fontSize: 14,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                  ),
-                                  Text(
-                                    item.categoryName ?? 'Kategori Umum',
-
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
                                   ),
                                 ],
                               );
@@ -168,23 +140,24 @@ class RecommendationPage extends StatelessWidget {
                         ),
 
                         const SizedBox(height: 16),
+
+                        /// ===== Save Outfit Button
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            minimumSize: const Size(double.infinity, 50),
+                            minimumSize: const Size(double.infinity, 48),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25),
+                              borderRadius: BorderRadius.circular(24),
                             ),
                           ),
                           onPressed: () {
                             context.read<RecommendationBloc>().add(
                               SaveSelectedOutfitEvent(
                                 eventId: eventId,
-                                // Menggunakan .id dari entitas WardrobeItem yang baru
                                 itemIds: rec.items.map((e) => e.id).toList(),
-                              ), // Hapus titik koma di sini agar tidak error
+                              ),
                             );
                           },
-                          child: const Text("Pilih Outfit Ini"),
+                          child: const Text('Pilih Outfit Ini'),
                         ),
                       ],
                     ),
@@ -194,29 +167,35 @@ class RecommendationPage extends StatelessWidget {
             );
           }
 
-          // 3. Tangani State Error
+          /// =========================
+          /// ERROR
+          /// =========================
           if (state is RecommendationError) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, color: Colors.red, size: 60),
+                  const Icon(Icons.error_outline, color: Colors.red, size: 64),
                   const SizedBox(height: 16),
                   Text(state.message, textAlign: TextAlign.center),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed:
-                        () => context.read<RecommendationBloc>().add(
-                          GetAiRecommendationEvent(eventId),
-                        ),
-                    child: const Text("Coba Lagi"),
+                    onPressed: () {
+                      context.read<RecommendationBloc>().add(
+                        GetAiRecommendationEvent(eventId),
+                      );
+                    },
+                    child: const Text('Coba Lagi'),
                   ),
                 ],
               ),
             );
           }
 
-          return const Center(child: Text("Tekan tombol untuk saran AI"));
+          /// =========================
+          /// DEFAULT
+          /// =========================
+          return const Center(child: Text('Menunggu rekomendasi AI...'));
         },
       ),
     );

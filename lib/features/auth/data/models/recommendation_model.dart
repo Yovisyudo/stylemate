@@ -1,5 +1,5 @@
-import 'package:stylemate/features/auth/data/models/recommendation_item_model.dart';
 import '../../domain/entities/recommendation.dart';
+import 'recommendation_item_model.dart';
 
 class RecommendationModel extends Recommendation {
   RecommendationModel({
@@ -10,21 +10,17 @@ class RecommendationModel extends Recommendation {
   });
 
   factory RecommendationModel.fromJson(Map<String, dynamic> json) {
-    final List<dynamic> itemsJson = json['items'] ?? [];
-
-    final items = itemsJson
-        .map(
-          (item) => RecommendationItemModel.fromJson(
-            item as Map<String, dynamic>,
-          ),
-        )
-        .toList();
-
     return RecommendationModel(
-      id: int.tryParse((json['id'] ?? 0).toString()) ?? 0,
-      reason: json['reason'] ?? 'Tidak ada alasan',
-      weatherTip: json['weather_tip'] ?? json['weatherTip'] ?? '',
-      items: items,
+      id: json['id'],
+      reason: json['reason'] ?? '',
+      weatherTip: json['weather_tip'] ?? '',
+      items: (json['items'] as List? ?? [])
+          .map(
+            (e) => RecommendationItemModel.fromJson(
+              Map<String, dynamic>.from(e),
+            ),
+          )
+          .toList(),
     );
   }
 }
