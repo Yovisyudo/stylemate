@@ -4,7 +4,7 @@ import 'package:stylemate/features/wardrobe/data/models/wardrobe_model.dart';
 class WardrobeRemoteDataSource {
   final Dio dio;
 
-  static const String _activeIp = "192.168.1.10";
+  static const String _activeIp = "192.168.18.108";
   static const String _baseImageUrl = "http://$_activeIp:8080/uploads/";
 
   WardrobeRemoteDataSource(this.dio);

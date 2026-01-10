@@ -60,7 +60,7 @@ Future<void> init() async {
     () => Dio(
         BaseOptions(
           // Pastikan IP sesuai dengan laptop Anda yang menjalankan CI4
-          baseUrl: 'http://192.168.1.10:8080/api',
+          baseUrl: 'http://192.168.18.108:8080/api',
           connectTimeout: const Duration(
             seconds: 30,
           ), // Naikkan agar tidak timeout
