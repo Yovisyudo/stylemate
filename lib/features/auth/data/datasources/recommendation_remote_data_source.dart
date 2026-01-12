@@ -6,7 +6,7 @@ import '../models/recommendation_model.dart';
 class RecommendationRemoteDataSource {
   final Dio dio;
 
-  static const String _activeIp = "192.168.18.108";
+  static const String _activeIp = "10.42.189.26";
   static const String _baseImageUrl = "http://$_activeIp:8080/uploads/";
 
   RecommendationRemoteDataSource(this.dio);

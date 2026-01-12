@@ -2,7 +2,7 @@ import '../../domain/entities/recommendation_item.dart';
 
 class RecommendationItemModel extends RecommendationItem {
   // ✅ IP laptop Anda - Ganti ini jika IP berubah
-  static const String _laptopIp = "192.168.18.108";
+  static const String _laptopIp = "10.42.189.26";
 
   const RecommendationItemModel({
     required super.id,

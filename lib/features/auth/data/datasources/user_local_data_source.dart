@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:stylemate/core/error/failures.dart';
-import 'package:stylemate/features/wardrobe/data/models/user_model.dart';
+import 'package:stylemate/features/auth/data/models/user_model.dart';
 
 class UserLocalDataSource {
   final SharedPreferences sharedPreferences;

@@ -29,6 +29,7 @@ import 'package:stylemate/features/event/domain/usecases/delete_event_usecase.da
 import 'package:stylemate/features/event/domain/usecases/get_events_usecase.dart';
 import 'package:stylemate/features/event/presentation/bloc/event_bloc.dart';
 
+
 // Wardrobe Feature
 import 'package:stylemate/features/wardrobe/data/datasources/wardrobe_remote_data_source.dart';
 import 'package:stylemate/features/wardrobe/domain/repositories/wardrobe_repository_impl.dart';
@@ -60,7 +61,7 @@ Future<void> init() async {
     () => Dio(
         BaseOptions(
           // Pastikan IP sesuai dengan laptop Anda yang menjalankan CI4
-          baseUrl: 'http://192.168.18.108:8080/api',
+          baseUrl: 'http://10.42.189.26:8080/api',
           connectTimeout: const Duration(
             seconds: 30,
           ), // Naikkan agar tidak timeout
