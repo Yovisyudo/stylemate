@@ -28,7 +28,9 @@ import 'package:stylemate/features/event/domain/usecases/create_event_usecase.da
 import 'package:stylemate/features/event/domain/usecases/delete_event_usecase.dart';
 import 'package:stylemate/features/event/domain/usecases/get_events_usecase.dart';
 import 'package:stylemate/features/event/presentation/bloc/event_bloc.dart';
-
+import 'package:stylemate/features/profile/data/datasources/profile_remote_data_source.dart';
+import 'package:stylemate/features/profile/data/repositories/profile_repository_impl.dart';
+import 'package:stylemate/features/profile/presentation/bloc/profile_bloc.dart';
 
 // Wardrobe Feature
 import 'package:stylemate/features/wardrobe/data/datasources/wardrobe_remote_data_source.dart';
@@ -61,7 +63,7 @@ Future<void> init() async {
     () => Dio(
         BaseOptions(
           // Pastikan IP sesuai dengan laptop Anda yang menjalankan CI4
-          baseUrl: 'http://10.42.189.26:8080/api',
+          baseUrl: 'http://10.175.170.26:8080/api',
           connectTimeout: const Duration(
             seconds: 30,
           ), // Naikkan agar tidak timeout
@@ -173,4 +175,19 @@ Future<void> init() async {
 
   // Data Source
   sl.registerLazySingleton(() => WardrobeRemoteDataSource(sl()));
+
+  // ================= PROFILE (PERBAIKAN INJECTION) =================
+  // Bloc
+  sl.registerFactory(() => ProfileBloc(repository: sl()));
+
+  // REPOSITORY: Daftarkan sebagai ProfileRepository (Interface)
+  // tetapi arahkan ke ProfileRepositoryImpl (Implementasi)
+  sl.registerLazySingleton<ProfileRepository>(
+    () => ProfileRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  // DATA SOURCE
+  sl.registerLazySingleton<ProfileRemoteDataSource>(
+    () => ProfileRemoteDataSourceImpl(dio: sl()),
+  );
 }

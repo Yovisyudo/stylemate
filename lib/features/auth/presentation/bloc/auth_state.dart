@@ -8,11 +8,13 @@ class AuthAuthenticated extends AuthState {
   final String uid;
   final String email;
   final String token;
+  final String name; // <--- TAMBAHKAN INI
 
   AuthAuthenticated({
     required this.uid,
     required this.email,
     required this.token,
+    required this.name, // <--- TAMBAHKAN INI
   });
 }
 
